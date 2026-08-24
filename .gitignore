@@ -1,3 +1,6 @@
 # Duplicate of photos already committed individually in Picture/ — also
 # exceeds GitHub's 100MB per-file push limit, so it can't go in anyway.
 Picture/drive-download-*.zip
+
+# Claude Code session/harness files — not part of the site.
+.claude/
