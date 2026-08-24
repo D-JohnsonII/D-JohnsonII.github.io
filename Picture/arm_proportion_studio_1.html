@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Arm Proportion Studio — Phase 1</title>
+<style>
+  :root{
+    --bg:#0c0f13; --panel:#141a21; --panel2:#0f151b; --line:#25313f;
+    --ink:#c9d4df; --muted:#6d7a88; --dim:#4a5561;
+    --cyan:#37c2d8;      /* measurement / reach */
+    --amber:#ffb43a;     /* the end effector — the innovation */
+    --alu:#b7bfc8;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden;-webkit-tap-highlight-color:transparent}
+  #stage{position:fixed;inset:0}
+  canvas{display:block;touch-action:none}
+
+  /* ---- top metrics strip ---- */
+  #hud{position:fixed;top:0;left:0;right:0;display:flex;gap:1px;background:var(--line);
+       border-bottom:1px solid var(--line);z-index:5;pointer-events:none}
+  .metric{flex:1;background:linear-gradient(180deg,#10161d,#0d1218);padding:9px 12px;min-width:0}
+  .metric .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .metric .v{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--ink);line-height:1.25}
+  .metric .v small{font-size:11px;color:var(--dim);font-weight:500}
+  .metric.hot .v{color:var(--cyan)}
+  .metric.warn .v{color:var(--amber)}
+
+  /* ---- control panel ---- */
+  #panel{position:fixed;top:58px;left:14px;width:288px;max-height:calc(100vh - 72px);
+         background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(10px);
+         border:1px solid var(--line);border-radius:12px;z-index:6;overflow:auto;
+         box-shadow:0 18px 50px rgba(0,0,0,.55)}
+  #panel header{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line);
+         padding:12px 14px;z-index:2}
+  #panel header h1{margin:0;font-size:13px;letter-spacing:.02em;font-weight:650}
+  #panel header p{margin:3px 0 0;font-size:11px;color:var(--muted)}
+  .presets{display:flex;gap:6px;padding:10px 12px 4px;flex-wrap:wrap}
+  .presets button{flex:1;min-width:60px;font-family:var(--sans);font-size:11px;color:var(--ink);
+         background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:7px 4px;cursor:pointer;transition:.12s}
+  .presets button:hover{border-color:var(--cyan);color:#fff}
+  .presets button:active{transform:translateY(1px)}
+  .grp{padding:6px 12px 12px}
+  .grp h2{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+         margin:12px 0 8px;padding-bottom:5px;border-bottom:1px dashed var(--line)}
+  .ctl{margin:9px 0}
+  .ctl .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+  .ctl label{font-size:12px;color:var(--ink)}
+  .ctl .val{font-family:var(--mono);font-size:12px;color:var(--cyan)}
+  .ctl.pose .val{color:var(--amber)}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;border-radius:3px;
+         background:linear-gradient(90deg,var(--line),#33414f);outline:none;margin:2px 0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;
+         background:var(--ink);border:2px solid var(--bg);cursor:pointer;box-shadow:0 0 0 1px var(--line)}
+  input[type=range].c::-webkit-slider-thumb{background:var(--cyan)}
+  input[type=range].a::-webkit-slider-thumb{background:var(--amber)}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--ink);border:2px solid var(--bg);cursor:pointer}
+  .note{padding:2px 12px 14px;font-size:11px;line-height:1.5;color:var(--muted)}
+  .note b{color:var(--ink);font-weight:600}
+
+  #viewbtns{position:fixed;bottom:14px;right:14px;z-index:6;display:flex;gap:8px}
+  #viewbtns button{font-family:var(--sans);font-size:11px;color:var(--ink);background:color-mix(in srgb,var(--panel) 92%,transparent);
+         backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+  #viewbtns button:hover{border-color:var(--cyan)}
+  #hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:4;font-size:10.5px;
+        letter-spacing:.06em;color:var(--dim);pointer-events:none;text-align:center}
+
+  #toggle{display:none}
+  @media (max-width:720px){
+    #panel{left:8px;right:8px;width:auto;top:auto;bottom:8px;max-height:52vh}
+    #panel.collapsed{max-height:44px;overflow:hidden}
+    #toggle{display:block;position:absolute;right:10px;top:10px;font-size:11px;color:var(--cyan);background:none;border:none;cursor:pointer}
+    #hint{display:none}
+    #viewbtns{bottom:auto;top:60px;right:8px;flex-direction:column}
+    .metric .v{font-size:15px}
+    .metric .k{font-size:8.5px}
+  }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="c"></canvas></div>
+
+<div id="hud">
+  <div class="metric hot"><div class="k">Max reach (horiz.)</div><div class="v" id="m-reach">–</div></div>
+  <div class="metric"><div class="k">Tip height</div><div class="v" id="m-height">–</div></div>
+  <div class="metric"><div class="k">Footprint radius</div><div class="v" id="m-foot">–</div></div>
+  <div class="metric"><div class="k">Stacked length</div><div class="v" id="m-stack">–</div></div>
+  <div class="metric warn"><div class="k">Joint : upper-arm</div><div class="v" id="m-ratio">–</div></div>
+</div>
+
+<div id="panel">
+  <header>
+    <button id="toggle">≡</button>
+    <h1>Arm Proportion Studio</h1>
+    <p>Phase-1 defaults from your kinematics · all mm</p>
+  </header>
+
+  <div class="presets">
+    <button data-pose="home">Home</button>
+    <button data-pose="extend">Reach out</button>
+    <button data-pose="fold">Fold</button>
+  </div>
+
+  <div class="grp" id="dimGrp">
+    <h2>Links — your aluminum tubes</h2>
+    <div id="dimLinks"></div>
+    <h2>Joint modules — the capstan cans</h2>
+    <div id="dimJoints"></div>
+  </div>
+
+  <div class="grp">
+    <h2>Pose</h2>
+    <div id="poseCtls"></div>
+  </div>
+
+  <div class="note">
+    <b>The number to watch:</b> joint length vs upper-arm length (top-right).
+    Under ~50% is normal for a capstan arm. The amber tip is your quick-change
+    end effector — the point of the whole build.
+  </div>
+</div>
+
+<div id="viewbtns">
+  <button id="resetView">Reset view</button>
+</div>
+<div id="hint">drag to orbit · scroll to zoom · two-finger pinch on touch</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const rad = d => d*Math.PI/180;
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt = v => Math.round(v);
+
+// ---- state (defaults grounded in Dj's own model + the built module) ----
+const dims = { base:150, l2:157, l3:157, wrist:85, bigDia:90, bigW:95, tubeOD:40 };
+const POSES = {
+  home:   {j1:0,  j2:-25, j3:60,  j5:25},
+  extend: {j1:0,  j2:-78, j3:14,  j5:6},
+  fold:   {j1:0,  j2:12,  j3:143, j5:-98},
+};
+const pose = Object.assign({}, POSES.home);
+const TOOL_LEN = 58;
+
+// ---- three basics ----
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0c0f13);
+scene.fog = new THREE.Fog(0x0c0f13, 1200, 3400);
+
+const cam = new THREE.PerspectiveCamera(44, 1, 1, 20000);
+let target = new THREE.Vector3(0, 230, 0);
+let sph = {r:1050, theta:0.85, phi:1.16};
+function updateCam(){
+  cam.position.set(
+    target.x + sph.r*Math.sin(sph.phi)*Math.sin(sph.theta),
+    target.y + sph.r*Math.cos(sph.phi),
+    target.z + sph.r*Math.sin(sph.phi)*Math.cos(sph.theta));
+  cam.lookAt(target);
+}
+
+// lights
+scene.add(new THREE.HemisphereLight(0x9fb4c8, 0x0a0d11, 0.85));
+const key = new THREE.DirectionalLight(0xffffff, 1.05); key.position.set(400,700,500); scene.add(key);
+const rim = new THREE.DirectionalLight(0x9ac6ff, 0.4); rim.position.set(-500,300,-400); scene.add(rim);
+
+// ground grid + envelope
+const grid = new THREE.GridHelper(1600, 32, 0x2b3a49, 0x18222c);
+grid.position.y = 0; scene.add(grid);
+let reachRing=null, reachDisc=null;
+
+// origin triad (small)
+function axis(color,vec){const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),vec]);
+  return new THREE.Line(g,new THREE.LineBasicMaterial({color}));}
+const triad=new THREE.Group();
+triad.add(axis(0xff5566,new THREE.Vector3(70,0,0)));
+triad.add(axis(0x66dd88,new THREE.Vector3(0,70,0)));
+triad.add(axis(0x5599ff,new THREE.Vector3(0,0,70)));
+scene.add(triad);
+
+// ---- arm build ----
+const pivots = {};
+const tip = new THREE.Object3D();
+let armRoot=null;
+
+function disposeTree(g){ g.traverse(o=>{ if(o.geometry)o.geometry.dispose();
+  if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose());}});}
+
+function rebuild(){
+  if(armRoot){ scene.remove(armRoot); disposeTree(armRoot); }
+  armRoot = new THREE.Group(); scene.add(armRoot);
+  const d = dims;
+  const smallDia = d.bigDia*0.62, smallW = d.bigW*0.55;
+
+  const alu   = new THREE.MeshStandardMaterial({color:0xb7bfc8, metalness:0.86, roughness:0.33});
+  const canB  = new THREE.MeshStandardMaterial({color:0x2b323c, metalness:0.55, roughness:0.5});
+  const canS  = new THREE.MeshStandardMaterial({color:0x394452, metalness:0.5,  roughness:0.55});
+  const ring  = new THREE.MeshStandardMaterial({color:0x37c2d8, metalness:0.3,  roughness:0.4, emissive:0x0b3a44, emissiveIntensity:0.5});
+  const amber = new THREE.MeshStandardMaterial({color:0xffb43a, metalness:0.4,  roughness:0.38, emissive:0x3a2600, emissiveIntensity:0.55});
+  const baseM = new THREE.MeshStandardMaterial({color:0x1d222a, metalness:0.3,  roughness:0.72});
+
+  // helpers: tube grows +Y from origin; can axis is local Y, centered
+  function tube(len,od,mat){ const m=new THREE.Mesh(new THREE.CylinderGeometry(od/2,od/2,len,36),mat||alu); m.position.y=len/2; return m; }
+  function can(dia,w,mat){ return new THREE.Mesh(new THREE.CylinderGeometry(dia/2,dia/2,w,44),mat); }
+  function accentRing(dia,w){ const r=new THREE.Mesh(new THREE.CylinderGeometry(dia/2+1.2,dia/2+1.2,3,44),ring); return r; }
+
+  // base plate
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(d.bigDia*0.78,d.bigDia*0.9,14,52), baseM);
+  plate.position.y=7; armRoot.add(plate);
+
+  // J1 — base yaw (about vertical Y)
+  const gJ1 = new THREE.Group(); armRoot.add(gJ1); pivots.j1=gJ1;
+  const baseCan = can(d.bigDia,d.bigW,canB); baseCan.position.y = 14 + d.bigW/2; gJ1.add(baseCan);
+  const bcr = accentRing(d.bigDia,d.bigW); bcr.position.y = 14 + d.bigW/2; gJ1.add(bcr);
+  const colLen = Math.max(8, d.base - (14 + d.bigW));
+  const col = tube(colLen, d.tubeOD*1.15); col.position.y = 14 + d.bigW; gJ1.add(col);
+
+  // J2 — shoulder pitch (about X), at y = base
+  const gJ2 = new THREE.Group(); gJ2.position.y = d.base; gJ1.add(gJ2); pivots.j2=gJ2;
+  const c2 = can(d.bigDia,d.bigW,canB); c2.rotation.z = Math.PI/2; gJ2.add(c2);     // lay axis along X
+  const c2r = accentRing(d.bigDia,d.bigW); c2r.rotation.z=Math.PI/2; gJ2.add(c2r);
+  gJ2.add(tube(d.l2, d.tubeOD));                                                      // upper arm +Y
+
+  // J3 — elbow pitch (about X), at end of upper arm
+  const gJ3 = new THREE.Group(); gJ3.position.y = d.l2; gJ2.add(gJ3); pivots.j3=gJ3;
+  const c3 = can(d.bigDia,d.bigW,canB); c3.rotation.z = Math.PI/2; gJ3.add(c3);
+  const c3r = accentRing(d.bigDia,d.bigW); c3r.rotation.z=Math.PI/2; gJ3.add(c3r);
+  gJ3.add(tube(d.l3, d.tubeOD*0.9));                                                  // forearm +Y
+
+  // J4 — forearm roll (about local Y), wrist cluster
+  const gJ4 = new THREE.Group(); gJ4.position.y = d.l3; gJ3.add(gJ4); pivots.j4=gJ4;
+  const c4 = can(smallDia, smallW, canS); c4.position.y = smallW/2; gJ4.add(c4);
+
+  // J5 — wrist pitch (about X)
+  const gJ5 = new THREE.Group(); gJ5.position.y = smallW; gJ4.add(gJ5); pivots.j5=gJ5;
+  const c5 = can(smallDia, smallW, canS); c5.rotation.z = Math.PI/2; gJ5.add(c5);
+  gJ5.add(tube(d.wrist, d.tubeOD*0.7));
+
+  // J6 — tool roll + the end effector (amber)
+  const gJ6 = new THREE.Group(); gJ6.position.y = d.wrist; gJ5.add(gJ6); pivots.j6=gJ6;
+  const flange = new THREE.Mesh(new THREE.CylinderGeometry(smallDia*0.5, smallDia*0.5, 9, 40), amber);
+  flange.position.y = 4.5; gJ6.add(flange);
+  const toolBody = new THREE.Mesh(new THREE.CylinderGeometry(smallDia*0.34, smallDia*0.40, TOOL_LEN-18, 6), amber);
+  toolBody.position.y = 9 + (TOOL_LEN-18)/2; gJ6.add(toolBody);
+  const toolTip = new THREE.Mesh(new THREE.ConeGeometry(smallDia*0.34, 18, 6), amber);
+  toolTip.position.y = TOOL_LEN - 9; gJ6.add(toolTip);
+  tip.position.set(0, TOOL_LEN, 0); gJ6.add(tip);
+
+  // reach envelope on ground
+  if(reachRing){ scene.remove(reachRing); reachRing.geometry.dispose(); }
+  if(reachDisc){ scene.remove(reachDisc); reachDisc.geometry.dispose(); }
+  const R = d.l2 + d.l3 + d.wrist + TOOL_LEN;
+  reachRing = new THREE.Mesh(new THREE.RingGeometry(R-3, R, 96),
+      new THREE.MeshBasicMaterial({color:0x37c2d8, transparent:true, opacity:0.85, side:THREE.DoubleSide}));
+  reachRing.rotation.x = -Math.PI/2; reachRing.position.y = 0.6; scene.add(reachRing);
+  reachDisc = new THREE.Mesh(new THREE.RingGeometry(1, R-3, 96),
+      new THREE.MeshBasicMaterial({color:0x37c2d8, transparent:true, opacity:0.045, side:THREE.DoubleSide}));
+  reachDisc.rotation.x = -Math.PI/2; reachDisc.position.y = 0.4; scene.add(reachDisc);
+
+  applyPose();
+}
+
+function applyPose(){
+  pivots.j1.rotation.y = rad(pose.j1);
+  pivots.j2.rotation.x = rad(pose.j2);
+  pivots.j3.rotation.x = rad(pose.j3);
+  pivots.j5.rotation.x = rad(pose.j5);
+  updateMetrics();
+}
+
+function updateMetrics(){
+  scene.updateMatrixWorld(true);
+  const p = new THREE.Vector3(); tip.getWorldPosition(p);
+  const reach = dims.l2 + dims.l3 + dims.wrist + TOOL_LEN;
+  const stack = dims.base + dims.l2 + dims.l3 + dims.wrist + TOOL_LEN;
+  const foot = Math.hypot(p.x, p.z);
+  const ratio = dims.bigW / dims.l2 * 100;
+  document.getElementById('m-reach').innerHTML  = fmt(reach)+' <small>mm</small>';
+  document.getElementById('m-height').innerHTML = fmt(p.y)+' <small>mm</small>';
+  document.getElementById('m-foot').innerHTML   = fmt(foot)+' <small>mm</small>';
+  document.getElementById('m-stack').innerHTML  = fmt(stack)+' <small>mm</small>';
+  document.getElementById('m-ratio').innerHTML  = fmt(ratio)+'<small>%</small>';
+  const rc = document.querySelector('#m-ratio').closest('.metric');
+  rc.style.setProperty('--x',0);
+  document.getElementById('m-ratio').style.color = ratio>55 ? '#ff6b5a' : (ratio>45 ? 'var(--amber)' : 'var(--cyan)');
+}
+
+// ---- build sliders ----
+const DIM_LINKS = [
+  {k:'base', t:'Base → shoulder', min:60, max:320},
+  {k:'l2',   t:'Upper arm (J2→J3)', min:100, max:520},
+  {k:'l3',   t:'Forearm (J3→J5)', min:80, max:480},
+  {k:'wrist',t:'Wrist (J5→tool)', min:40, max:220},
+  {k:'tubeOD',t:'Link tube Ø', min:18, max:70},
+];
+const DIM_JOINTS = [
+  {k:'bigDia', t:'J1–J3 can Ø', min:50, max:170},
+  {k:'bigW',   t:'J1–J3 can length', min:40, max:210},
+];
+const POSE_C = [
+  {k:'j1', t:'J1 base', min:-180, max:180},
+  {k:'j2', t:'J2 shoulder', min:-90, max:90},
+  {k:'j3', t:'J3 elbow', min:-15, max:155},
+  {k:'j5', t:'J5 wrist', min:-115, max:115},
+];
+
+function slider(cfg, store, cls, onchange){
+  const wrap=document.createElement('div'); wrap.className='ctl'+(cls==='a'?' pose':'');
+  const row=document.createElement('div'); row.className='row';
+  const lab=document.createElement('label'); lab.textContent=cfg.t;
+  const val=document.createElement('span'); val.className='val'; val.textContent=fmt(store[cfg.k])+(cls==='a'?'°':'');
+  row.appendChild(lab); row.appendChild(val);
+  const inp=document.createElement('input'); inp.type='range'; inp.min=cfg.min; inp.max=cfg.max;
+  inp.step=(cls==='a'?1:1); inp.value=store[cfg.k]; inp.className=cls;
+  inp.addEventListener('input',()=>{ store[cfg.k]=parseFloat(inp.value); val.textContent=fmt(store[cfg.k])+(cls==='a'?'°':''); onchange(); });
+  wrap.appendChild(row); wrap.appendChild(inp);
+  wrap._val=val; wrap._inp=inp; wrap._key=cfg.k;
+  return wrap;
+}
+const poseEls=[];
+DIM_LINKS.forEach(c=>document.getElementById('dimLinks').appendChild(slider(c,dims,'c',rebuild)));
+DIM_JOINTS.forEach(c=>document.getElementById('dimJoints').appendChild(slider(c,dims,'c',rebuild)));
+POSE_C.forEach(c=>{const el=slider(c,pose,'a',applyPose);poseEls.push(el);document.getElementById('poseCtls').appendChild(el);});
+
+// presets
+document.querySelectorAll('.presets button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    const p=POSES[b.dataset.pose]; Object.assign(pose,p);
+    poseEls.forEach(el=>{ el._inp.value=pose[el._key]; el._val.textContent=fmt(pose[el._key])+'°'; });
+    applyPose();
+  });
+});
+
+// ---- interaction: orbit + pinch ----
+const pmap=new Map();
+function pd(e){ pmap.set(e.pointerId,{x:e.clientX,y:e.clientY}); canvas.setPointerCapture(e.pointerId); }
+function pu(e){ pmap.delete(e.pointerId); }
+function pm(e){
+  if(!pmap.has(e.pointerId)) return;
+  const prev=pmap.get(e.pointerId); pmap.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pmap.size===1){
+    const dx=e.clientX-prev.x, dy=e.clientY-prev.y;
+    sph.theta -= dx*0.005; sph.phi = clamp(sph.phi - dy*0.005, 0.16, 1.5); updateCam();
+  } else if(pmap.size===2){
+    const pts=[...pmap.values()]; const dist=Math.hypot(pts[0].x-pts[1].x, pts[0].y-pts[1].y);
+    if(pm._d){ sph.r = clamp(sph.r * (pm._d/dist), 260, 4200); updateCam(); }
+    pm._d = dist;
+  }
+}
+canvas.addEventListener('pointerdown',pd);
+canvas.addEventListener('pointermove',pm);
+canvas.addEventListener('pointerup',e=>{pu(e); pm._d=0;});
+canvas.addEventListener('pointercancel',e=>{pu(e); pm._d=0;});
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); sph.r=clamp(sph.r*(1+Math.sign(e.deltaY)*0.09),260,4200); updateCam(); },{passive:false});
+
+document.getElementById('resetView').addEventListener('click',()=>{ target.set(0,230,0); sph={r:1050,theta:0.85,phi:1.16}; updateCam(); });
+document.getElementById('toggle').addEventListener('click',()=>document.getElementById('panel').classList.toggle('collapsed'));
+
+// ---- resize + loop ----
+function resize(){ const w=window.innerWidth,h=window.innerHeight; renderer.setSize(w,h); cam.aspect=w/h; cam.updateProjectionMatrix(); }
+window.addEventListener('resize',resize);
+resize(); rebuild(); updateCam();
+(function loop(){ requestAnimationFrame(loop); renderer.render(scene,cam); })();
+</script>
+</body>
+</html>

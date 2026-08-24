@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<!--
+================================================================
+  DANDRELL E. JOHNSON II — PORTFOLIO
+  How to edit this file. Read this part, ignore the rest.
+================================================================
+
+  THE ONLY RULE: change text between > and <, never the tags.
+
+      <h2 class="rv" data-d="1">On the<br>floor.</h2>
+                                ^^^^^^^^^^^^^^^^
+                                edit this bit only
+
+  ----------------------------------------------------------------
+  WHERE THINGS ARE  (use Ctrl+F / Cmd+F for the words in caps)
+  ----------------------------------------------------------------
+  Search "COVER"          your name, the intro line, degree info
+  Search "FORMULA SAE"    each chapter is marked like this
+  Search "LOG"            the short dated list near the bottom
+  Search "FIELD RECORD"   the sideways-sliding photo strip
+  Search "CONTACT"        email, LinkedIn, resume link
+
+  ----------------------------------------------------------------
+  PHOTOS
+  ----------------------------------------------------------------
+  Every photo lives in the assets folder. If a file is missing you
+  see a grey box with the filename in it — nothing breaks, so you
+  can add them one at a time.
+
+  Full list of what goes where is in PHOTO-CHECKLIST.md.
+
+  To swap a photo, change the name in BOTH places on these two
+  lines (they must match):
+
+      <span class="missing">assets/gallery/shop.jpg</span>
+      <img src="assets/gallery/shop.jpg" ...>
+
+  ----------------------------------------------------------------
+  ADDING A PHOTO TO THE SLIDING STRIP
+  ----------------------------------------------------------------
+  Search "FIELD RECORD". Copy one whole <figure> block — all four
+  lines — paste it after the last one, and change the filename in
+  BOTH places plus the alt text. The strip measures itself, so more
+  photos just means it slides longer. Nothing else to change. Add
+  as many as you want.
+
+  ----------------------------------------------------------------
+  ADDING A WHOLE NEW CHAPTER
+  ----------------------------------------------------------------
+  Copy an existing <section class="page"> ... </section> block,
+  paste it where it belongs by date, then change the text.
+  Then renumber: data-folio, the <b>NN</b> in the kicker, and the
+  Fig. NN in the caption should all count up in order down the page.
+  Alternate "chapter" and "chapter flip" so the photo switches
+  sides each time.
+
+  ----------------------------------------------------------------
+  IF THE SCROLL FEELS TOO SLOW OR TOO FAST
+  ----------------------------------------------------------------
+  Search "Vertical room per chapter" — comment there explains it.
+
+  ----------------------------------------------------------------
+  TWO THINGS STILL UNFINISHED
+  ----------------------------------------------------------------
+  1. Search "PRESS LINK" — two href="#" need real article URLs.
+  2. No phone number is on this page yet, on purpose. Your site
+     and your resume disagreed. Pick one, then add it in CONTACT.
+
+================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dandrell E. Johnson II — Mechanical Engineering</title>
+<meta name="description" content="Engineering portfolio of Dandrell E. Johnson II. Formula SAE, NASA HERC, NCSA research, project engineering at Trane Technologies, manufacturing engineering at Heil Environmental, and a 5-DOF robotic arm.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS — pulled off the reference spread
+   ============================================================ */
+:root{
+  --paper:#EFEDE6;
+  --paper-2:#E6E3DA;
+  --ink:#14161A;
+  --ink-soft:#5C5F66;
+  --rule:#C6C2B7;
+  --blue:#2B5C8A;
+  --brick:#A63A28;
+
+  --f-display:'Anton',Impact,sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,monospace;
+
+  --gutter:clamp(18px,5vw,64px);
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:var(--f-body);font-size:16px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(circle at 1px 1px,rgba(20,22,26,.055) 1px,transparent 0);
+  background-size:3px 3px;
+}
+
+/* ============================================================
+   SIGNATURE — LIVE COLUMN RULER
+   The numbered ruler from the reference, made functional:
+   the lit column is your position in the document.
+   ============================================================ */
+.grid-lines{position:fixed;inset:0;z-index:0;pointer-events:none;display:flex;
+  padding:0 var(--gutter)}
+.grid-lines span{flex:1;border-left:1px solid var(--rule);opacity:.42}
+.grid-lines span:last-child{border-right:1px solid var(--rule)}
+
+.ruler{
+  position:fixed;top:0;left:0;right:0;z-index:40;pointer-events:none;
+  display:flex;padding:0 var(--gutter);
+  border-bottom:1px solid var(--ink);
+  background:linear-gradient(to bottom,var(--paper) 62%,transparent);
+}
+.ruler i{
+  position:relative;flex:1;font-style:normal;font-family:var(--f-mono);font-size:10px;
+  padding:9px 0 9px 7px;color:var(--ink-soft);
+  border-left:1px solid var(--rule);transition:color .35s var(--ease);
+}
+.ruler i:last-child{border-right:1px solid var(--rule)}
+.ruler i.lit{color:var(--ink);font-weight:500}
+.ruler i.lit::after{
+  content:'';position:absolute;left:7px;bottom:-1px;width:26px;height:2px;
+  background:var(--brick);
+}
+
+.folio{
+  position:fixed;bottom:16px;z-index:40;pointer-events:none;
+  font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-soft);
+}
+.folio.l{left:var(--gutter)}
+.folio.r{right:var(--gutter);color:var(--brick)}
+
+/* ============================================================
+   PAGE SHELL
+   ============================================================ */
+main{position:relative;z-index:2}
+.page{
+  /* Vertical room per chapter. Bigger = slower, calmer scroll between
+     sections. If it ever feels TOO slow, lower the middle number
+     (26vh / 24vh) first — that's the one doing most of the work. */
+  padding:clamp(150px,26vh,280px) var(--gutter) clamp(140px,24vh,250px);
+  max-width:1500px;margin:0 auto;
+  border-bottom:1px solid var(--rule);
+}
+.page:last-of-type{border-bottom:0}
+
+/* ============================================================
+   TYPE
+   ============================================================ */
+h1,h2{font-family:var(--f-display);font-weight:400;text-transform:uppercase;margin:0}
+h1{font-size:clamp(52px,13.5vw,190px);line-height:.84;letter-spacing:-.005em}
+h2{font-size:clamp(38px,8.2vw,104px);line-height:.87;letter-spacing:-.005em}
+h3{font-family:var(--f-body);font-size:17px;font-weight:600;letter-spacing:-.01em;margin:0 0 8px}
+
+.kicker{
+  font-family:var(--f-mono);font-size:10.5px;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:20px;
+  display:flex;gap:14px;align-items:baseline;
+}
+.kicker b{color:var(--brick);font-weight:500}
+.deck{
+  font-size:clamp(15px,1.65vw,18.5px);line-height:1.55;max-width:44ch;
+  color:var(--ink);margin:26px 0 0;
+}
+p{margin:0 0 14px}
+
+.mask{overflow:hidden;display:block}
+.mask > span{display:block;transform:translateY(102%)}
+.ready .mask > span{transform:translateY(0);transition:transform 1s var(--ease)}
+.ready .mask:nth-child(2) > span{transition-delay:.09s}
+.ready .mask:nth-child(3) > span{transition-delay:.18s}
+
+/* Reveal-on-scroll. Duration = how long each element takes to arrive.
+   data-d 1/2/3 = the stagger: year, then headline, then body, then table,
+   each one beat behind the last. Widen these numbers to slow the cascade,
+   tighten them to speed it up. */
+.rv{opacity:0;transform:translateY(26px);
+  transition:opacity 1.15s var(--ease),transform 1.15s var(--ease)}
+.rv.in{opacity:1;transform:none}
+.rv[data-d="1"]{transition-delay:.18s}
+.rv[data-d="2"]{transition-delay:.36s}
+.rv[data-d="3"]{transition-delay:.54s}
+.rv[data-d="4"]{transition-delay:.72s}
+
+/* ============================================================
+   COVER
+   ============================================================ */
+.cover{min-height:100svh;display:flex;flex-direction:column;justify-content:center}
+.cover h1{margin-bottom:clamp(26px,4vh,44px)}
+.cover-foot{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:26px;border-top:1px solid var(--ink);padding-top:18px;margin-top:34px;
+}
+.cover-foot div{font-family:var(--f-mono);font-size:11px;line-height:1.75;
+  letter-spacing:.03em;color:var(--ink-soft)}
+.cover-foot strong{display:block;color:var(--ink);font-weight:500;
+  letter-spacing:.16em;text-transform:uppercase;font-size:9.5px;margin-bottom:5px}
+.scroll-cue{
+  margin-top:clamp(34px,6vh,60px);font-family:var(--f-mono);font-size:10px;
+  letter-spacing:.22em;text-transform:uppercase;color:var(--brick);
+}
+.scroll-cue span{display:inline-block;animation:nudge 2.1s var(--ease) infinite}
+@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+
+/* ============================================================
+   CHAPTER — variable-scale timeline entry
+   Year sits in the margin. No drawn spine; the ruler is the spine.
+   ============================================================ */
+.chapter{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+  gap:clamp(26px,5vw,72px);align-items:start}
+.chapter.flip .col-media{order:-1}
+.year{
+  font-family:var(--f-display);font-size:clamp(30px,4.4vw,58px);
+  color:var(--rule);line-height:1;margin-bottom:14px;
+}
+.body-copy{max-width:50ch;margin-top:22px}
+
+.spec{
+  margin-top:26px;border-top:1px solid var(--ink);padding-top:10px;
+  font-family:var(--f-mono);font-size:11px;line-height:1.95;
+}
+.spec dl{display:grid;grid-template-columns:minmax(118px,auto) 1fr;gap:0 20px;margin:0}
+.spec dt{color:var(--ink-soft);text-transform:uppercase;letter-spacing:.1em;
+  font-size:9.5px;align-self:center}
+.spec dd{margin:0;color:var(--ink)}
+.spec-cap{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+
+/* ============================================================
+   LIVE PHOTOGRAPH
+   Drifts against the text, settles from oversize, and warms from
+   drafting blue to full colour as it crosses mid-screen.
+   ============================================================ */
+.plate{position:relative;overflow:hidden;border:1px solid var(--ink);
+  background:var(--paper-2);display:block}
+.plate::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:2;
+  background:var(--blue);mix-blend-mode:color;opacity:var(--tint,1);
+}
+.plate img{
+  display:block;width:100%;height:100%;object-fit:cover;
+  transform:scale(var(--pscale,1.06)) translate3d(0,var(--py,0px),0);
+  filter:grayscale(var(--pgray,1)) contrast(1.05);
+}
+.plate .missing{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  text-align:center;padding:18px;font-family:var(--f-mono);font-size:10px;
+  letter-spacing:.06em;color:var(--ink-soft);
+}
+.caption{
+  margin-top:9px;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-soft);
+  display:flex;justify-content:space-between;gap:14px;
+}
+
+a.plate{text-decoration:none;color:inherit}
+a.plate .press{
+  position:absolute;top:0;right:0;z-index:3;background:var(--brick);color:var(--paper);
+  font-family:var(--f-mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+  padding:7px 12px;transform:translateY(-100%);transition:transform .5s var(--ease),background .3s var(--ease);
+}
+a.plate.in .press{transform:translateY(0)}
+a.plate:hover .press,a.plate:focus-visible .press{background:var(--ink)}
+a.plate:focus-visible{outline:2px solid var(--brick);outline-offset:3px}
+
+/* ============================================================
+   EXPLODED VIEW — canvas frame scrubber
+   ============================================================ */
+.explode{position:relative;height:340vh;margin-top:40px}
+.explode-sticky{position:sticky;top:0;height:100svh;display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:var(--gutter);
+  align-items:center;padding:56px 0 40px}
+.stage{position:relative;height:76svh;display:flex;align-items:center;justify-content:center}
+#seqCanvas{max-width:100%;max-height:100%;display:block}
+.stage-fallback{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;border:1px dashed var(--rule);
+  text-align:center;padding:26px;font-family:var(--f-mono);font-size:10.5px;
+  line-height:1.9;color:var(--ink-soft)}
+.loadbar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--rule)}
+.loadbar i{display:block;height:100%;width:0;background:var(--blue);transition:width .25s linear}
+
+.callout{position:absolute;font-family:var(--f-mono);font-size:10px;line-height:1.55;
+  letter-spacing:.05em;color:var(--blue);max-width:172px;opacity:0;
+  transform:translateY(7px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.callout.on{opacity:1;transform:none}
+.callout::before{content:'';position:absolute;top:6px;width:44px;height:1px;background:var(--blue)}
+.callout.left{text-align:right;right:78%}
+.callout.left::before{right:-52px}
+.callout.right{left:78%}
+.callout.right::before{left:-52px}
+.callout b{display:block;color:var(--ink);font-weight:500;text-transform:uppercase;
+  letter-spacing:.12em;font-size:9px;margin-bottom:2px}
+
+/* ============================================================
+   LOG — compressed entries
+   ============================================================ */
+.log{border-top:1px solid var(--ink);margin-top:26px}
+.log-row{display:grid;grid-template-columns:92px minmax(0,1fr) auto;gap:18px;
+  padding:15px 0;border-bottom:1px solid var(--rule);align-items:baseline}
+.log-row time,.log-row .tag{font-family:var(--f-mono);font-size:10.5px;
+  letter-spacing:.1em;color:var(--ink-soft);text-transform:uppercase}
+.log-row strong{font-weight:600;font-size:15.5px}
+.log-row p{margin:3px 0 0;font-size:14px;color:var(--ink-soft);line-height:1.5}
+
+/* ============================================================
+   FIELD RECORD — horizontal strip driven by vertical scroll
+   ============================================================ */
+.strip{position:relative;height:300vh}
+.strip-sticky{position:sticky;top:0;height:100svh;display:flex;align-items:center;overflow:hidden}
+.strip-track{display:flex;gap:22px;padding:0 var(--gutter);will-change:transform}
+.strip-track .plate{flex:0 0 auto;width:clamp(230px,29vw,400px);aspect-ratio:4/3;margin:0}
+.strip-track .plate:nth-child(even){aspect-ratio:3/4;align-self:flex-start;margin-top:8vh}
+/* Fixed to the screen, not the sticky box, so it can't drift up through the
+   ruler as the strip lets go at the end. JS turns it on and off (below,
+   search "hint stuck check") only while the strip is actually pinned. */
+.strip-hint{position:fixed;left:var(--gutter);bottom:9vh;font-family:var(--f-mono);
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);
+  opacity:0;pointer-events:none;transition:opacity .3s var(--ease)}
+.strip-hint.show{opacity:1}
+
+/* ============================================================
+   CONTACT
+   ============================================================ */
+.contact{min-height:88svh;display:flex;flex-direction:column;justify-content:center}
+.links{display:flex;flex-wrap:wrap;gap:12px;margin-top:34px}
+.links a{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  text-decoration:none;color:var(--ink);border:1px solid var(--ink);padding:14px 22px;
+  transition:background .3s var(--ease),color .3s var(--ease);
+}
+.links a:hover,.links a:focus-visible{background:var(--ink);color:var(--paper)}
+.links a:focus-visible{outline:2px solid var(--brick);outline-offset:3px}
+.colophon{margin-top:auto;padding-top:52px;font-family:var(--f-mono);font-size:10px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:900px){
+  .grid-lines span:nth-child(n+5),.ruler i:nth-child(n+5){display:none}
+  .chapter{grid-template-columns:1fr;gap:24px}
+  .chapter.flip .col-media{order:0}
+  .explode{height:260vh}
+  .explode-sticky{grid-template-columns:1fr;align-content:center;gap:20px}
+  .stage{height:50svh}
+  .callout{display:none}
+  .strip{height:230vh}
+  .strip-track .plate{width:72vw}
+  .log-row{grid-template-columns:76px 1fr}
+  .log-row .tag{grid-column:2}
+  .folio{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition-duration:.01ms!important}
+  .mask > span{transform:none}
+  .rv{opacity:1;transform:none}
+  .plate img{transform:none;filter:none}
+  .plate::after{opacity:0}
+  a.plate .press{transform:none}
+  .callout{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<div class="grid-lines" aria-hidden="true">
+  <span></span><span></span><span></span><span></span>
+  <span></span><span></span><span></span><span></span>
+</div>
+
+<div class="ruler" id="ruler" aria-hidden="true">
+  <i>1</i><i>2</i><i>3</i><i>4</i><i>5</i><i>6</i><i>7</i><i>8</i>
+</div>
+
+<div class="folio l" id="folioL">Portfolio — 2026</div>
+<div class="folio r" id="folioR">01</div>
+
+<main>
+
+<!-- ============ COVER ============ -->
+<section class="page cover" data-folio="01" data-label="Cover">
+  <h1>
+    <span class="mask"><span>Dandrell</span></span>
+    <span class="mask"><span>E. Johnson</span></span>
+    <span class="mask"><span>II.</span></span>
+  </h1>
+
+  <p class="deck rv" data-d="1">Mechanical engineering, with the work done in the shop and not only on the screen. Built hardware and shipped process — a race car, a rover, a research pipeline, an HVAC assembly cell, a refuse-body line, and an arm still on the bench.</p>
+
+  <div class="cover-foot rv" data-d="2">
+    <div><strong>Degree</strong>B.S. Mechanical Engineering, minor in Computer Science<br>Alabama A&amp;M University, May 2027</div>
+    <div><strong>Current</strong>Manufacturing Engineering Intern<br>Heil Environmental — ESG, a Terex company</div>
+    <div><strong>Based</strong>Normal, Alabama<br>Fort Payne, Alabama</div>
+  </div>
+
+  <div class="scroll-cue rv" data-d="3">Scroll <span>&#8595;</span></div>
+</section>
+
+<!-- ============ 2022–23 · FORMULA SAE ============ -->
+<section class="page" data-folio="02" data-label="Formula SAE">
+  <div class="chapter">
+    <div class="col-copy">
+      <div class="kicker rv"><b>01</b> Special Projects Laboratory</div>
+      <div class="year rv" data-d="1">2022—23</div>
+      <h2 class="rv" data-d="1">Built<br>the car.</h2>
+
+      <div class="body-copy rv" data-d="2">
+        <p>Project supervisor for the Alabama A&amp;M Formula SAE car, running design through manufacturing and holding the team to a weekly schedule.</p>
+        <p>The car had no way to actuate the transmission. I built an electronic paddle shifter for it — a switch input read by an Arduino in C++, driving a servo against the shift linkage. I also fabricated the full wiring harness, where every electrical system in the car had to talk to every other one with no margin for a bad crimp, and designed the intake air manifold.</p>
+      </div>
+
+      <div class="spec rv" data-d="3">
+        <div class="spec-cap">Scope of work</div>
+        <dl>
+          <dt>Role</dt><dd>Project supervisor</dd>
+          <dt>Shift actuation</dt><dd>Arduino · C++ · servo linkage</dd>
+          <dt>Harness</dt><dd>Full vehicle, in-house fabrication</dd>
+          <dt>Intake</dt><dd>Air manifold, design and build</dd>
+          <dt>Season</dt><dd>FSAE 2023—24</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="col-media rv" data-d="2">
+      <!-- PRESS LINK 1 of 2 — paste the AL.com article URL between the quotes in href="" below -->
+      <a class="plate" href="#" target="_blank" rel="noopener" style="aspect-ratio:4/5">
+        <span class="press">Read the article &#8599;</span>
+        <span class="missing">assets/gallery/racecar.jpg</span>
+        <img src="assets/gallery/racecar.jpg" alt="The completed Alabama A&amp;M Formula SAE car" onerror="this.style.display='none'">
+      </a>
+      <div class="caption"><span>AAMU Formula SAE · complete</span><span>Fig. 01</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2023 · NASA HERC ============ -->
+<section class="page" data-folio="03" data-label="NASA HERC">
+  <div class="chapter flip">
+    <div class="col-copy">
+      <div class="kicker rv"><b>02</b> NASA Human Exploration Rover Challenge</div>
+      <div class="year rv" data-d="1">2023</div>
+      <h2 class="rv" data-d="1">Test and<br>evaluation.</h2>
+
+      <div class="body-copy rv" data-d="2">
+        <p>Test and evaluation engineer on the rover team. A human-powered vehicle, hand-built, run over simulated planetary terrain against a clock.</p>
+        <p>My work was the chassis and its components — analysing what the structure would actually see under load, then presenting the findings and representing the team through review.</p>
+      </div>
+
+      <div class="spec rv" data-d="3">
+        <div class="spec-cap">Assignment</div>
+        <dl>
+          <dt>Role</dt><dd>Test &amp; evaluation engineer</dd>
+          <dt>Subject</dt><dd>Rover chassis and components</dd>
+          <dt>Drive</dt><dd>Human-powered, two-crew</dd>
+          <dt>Venue</dt><dd>Marshall Space Flight Center</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="col-media rv" data-d="2">
+      <!-- PRESS LINK 2 of 2 — paste the NASA HERC article URL between the quotes in href="" below -->
+      <a class="plate" href="#" target="_blank" rel="noopener" style="aspect-ratio:4/3">
+        <span class="press">NASA HERC &#8599;</span>
+        <span class="missing">assets/gallery/rover.jpg</span>
+        <img src="assets/gallery/rover.jpg" alt="The rover running the NASA Human Exploration Rover Challenge course" onerror="this.style.display='none'">
+      </a>
+      <div class="caption"><span>HERC course · Huntsville</span><span>Fig. 02</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2024 · NCSA ============ -->
+<section class="page" data-folio="04" data-label="NCSA Research">
+  <div class="chapter">
+    <div class="col-copy">
+      <div class="kicker rv"><b>03</b> National Center for Supercomputing Applications</div>
+      <div class="year rv" data-d="1">2024</div>
+      <h2 class="rv" data-d="1">Finding<br>the cracks.</h2>
+
+      <div class="body-copy rv" data-d="2">
+        <p>Summer research at NCSA, University of Illinois Urbana-Champaign, through the MSI Alliance programme, under Dr. Volodymyr Kindratenko.</p>
+        <p>The problem: detecting and measuring cracking in concrete under load, at a scale nobody wants to do by eye. I ran segmentation models in PyTorch across a large annotated dataset, comparing architectures to find which one correlated crack geometry to applied load most reliably.</p>
+      </div>
+
+      <div class="spec rv" data-d="3">
+        <div class="spec-cap">Method</div>
+        <dl>
+          <dt>Framework</dt><dd>PyTorch</dd>
+          <dt>Task</dt><dd>Semantic segmentation</dd>
+          <dt>Subject</dt><dd>Crack propagation in concrete</dd>
+          <dt>Advisor</dt><dd>Dr. V. Kindratenko</dd>
+          <dt>Term</dt><dd>Summer 2024</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="col-media rv" data-d="2">
+      <div class="plate" style="aspect-ratio:4/5">
+        <span class="missing">assets/gallery/ncsa.jpg</span>
+        <img src="assets/gallery/ncsa.jpg" alt="Research presentation at NCSA, University of Illinois" onerror="this.style.display='none'">
+      </div>
+      <div class="caption"><span>NCSA · Urbana-Champaign</span><span>Fig. 03</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2025 · TRANE TECHNOLOGIES ============
+     PHOTO WANTED: assets/gallery/trane.jpg
+     Anything from La Crosse — the cell, the line, you on site.
+     If the file isn't there you'll just see a grey box with the
+     filename in it. Nothing breaks. -->
+<section class="page" data-folio="05" data-label="Trane Technologies">
+  <div class="chapter flip">
+    <div class="col-copy">
+      <div class="kicker rv"><b>04</b> Trane Technologies — Commercial HVAC</div>
+      <div class="year rv" data-d="1">2025</div>
+      <h2 class="rv" data-d="1">A new<br>cell.</h2>
+
+      <div class="body-copy rv" data-d="2">
+        <p>Project engineering intern in La Crosse, Wisconsin, on commercial HVAC production.</p>
+        <p>Led the installation of a new assembly cell as part of a new production line — $1.3 million in added revenue and thirty percent more plant capacity. Wrote the standard work for it from scratch, calculating cycle times and running the time studies the operators would actually be measured against. Then matched facility capacity to real customer demand and cut more than twenty thousand dollars of material out of holding cost.</p>
+      </div>
+
+      <div class="spec rv" data-d="3">
+        <div class="spec-cap">Delivered</div>
+        <dl>
+          <dt>Revenue</dt><dd>+$1.3M, new production line</dd>
+          <dt>Capacity</dt><dd>+30% plant throughput</dd>
+          <dt>Materials</dt><dd>$20,000+ holding cost removed</dd>
+          <dt>Discipline</dt><dd>Standard work &middot; time study</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="col-media rv" data-d="2">
+      <div class="plate" style="aspect-ratio:4/3">
+        <span class="missing">assets/gallery/trane.jpg</span>
+        <img src="assets/gallery/trane.jpg" alt="Assembly cell installation, La Crosse" onerror="this.style.display='none'">
+      </div>
+      <div class="caption"><span>La Crosse &middot; assembly cell</span><span>Fig. 04</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2025– · HEIL ============
+     PHOTO WANTED: assets/gallery/shop.jpg -->
+<section class="page" data-folio="06" data-label="Heil Environmental">
+  <div class="chapter">
+    <div class="col-copy">
+      <div class="kicker rv"><b>05</b> Heil Environmental — ESG, a Terex company</div>
+      <div class="year rv" data-d="1">2025—</div>
+      <h2 class="rv" data-d="1">On the<br>floor.</h2>
+
+      <div class="body-copy rv" data-d="2">
+        <p>Manufacturing engineering intern in Fort Payne, working lean and time study on a live refuse-body line. Twenty-plus workflow analyses standardized, cycle times down ten percent, bottlenecks named.</p>
+        <p>Three tools came out of it. A live time-study tool that cut engineering effort by roughly half and got adopted on the floor — operators mark their own stations, so the data comes from the line instead of a stopwatch behind them. A work-instruction builder in VBA that turns a parts list into a formatted ledger sheet with PPE icons and automatic pagination. And training video and digital documentation folded into Smartsheet and L2L, which took operator error down twenty-five percent.</p>
+      </div>
+
+      <div class="spec rv" data-d="3">
+        <div class="spec-cap">Delivered</div>
+        <dl>
+          <dt>Cycle time</dt><dd>&minus;10% across 20+ workflows</dd>
+          <dt>Engineering effort</dt><dd>&minus;52%, live time-study tool</dd>
+          <dt>Operator error</dt><dd>&minus;25% (Smartsheet / L2L)</dd>
+          <dt>Discipline</dt><dd>Lean · time study</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="col-media rv" data-d="2">
+      <div class="plate" style="aspect-ratio:4/3">
+        <span class="missing">assets/gallery/shop.jpg</span>
+        <img src="assets/gallery/shop.jpg" alt="Manufacturing floor work" onerror="this.style.display='none'">
+      </div>
+      <div class="caption"><span>Fort Payne · production</span><span>Fig. 05</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2025–26 · CAPSTONE, EXPLODED VIEW ============ -->
+<section class="page" data-folio="07" data-label="Capstone — Robotic Arm" style="padding-bottom:0">
+  <div class="kicker rv"><b>06</b> Senior capstone · in progress</div>
+  <div class="year rv" data-d="1">2025—26</div>
+  <h2 class="rv" data-d="1">Five degrees<br>of freedom.</h2>
+  <p class="deck rv" data-d="2">A robotic arm with a quick-change tool head, fabricated entirely in house. The second joint carries the load, so it got a single-stage cycloidal reduction — seventeen lobes running against eighteen pins, printed in PETG.</p>
+
+  <div class="explode" id="explode">
+    <div class="explode-sticky">
+
+      <div class="explode-copy rv">
+        <div class="spec">
+          <div class="spec-cap">J2 · Cycloidal drive</div>
+          <dl>
+            <dt>Ratio</dt><dd>17:1, single stage</dd>
+            <dt>Lobes</dt><dd>17</dd>
+            <dt>Pins</dt><dd>18</dd>
+            <dt>Disc stack</dt><dd>90—100 mm</dd>
+            <dt>Material</dt><dd>PETG, printed</dd>
+            <dt>Model</dt><dd>Parametric, OpenSCAD</dd>
+            <dt>Status</dt><dd>Print validation</dd>
+          </dl>
+        </div>
+        <div class="spec" style="margin-top:26px">
+          <div class="spec-cap">Firmware</div>
+          <dl>
+            <dt>Size</dt><dd>~2,100 lines · 11 files</dd>
+            <dt>Control</dt><dd>Timer1 ISR motion</dd>
+            <dt>Safety</dt><dd>Latching fault manager</dd>
+            <dt>Link</dt><dd>Checksummed serial</dd>
+            <dt>Validation</dt><dd>1,000-cycle plan</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="stage" id="stage">
+        <canvas id="seqCanvas" aria-label="Exploded view of the J2 cycloidal joint"></canvas>
+        <div class="stage-fallback" id="stageFallback">
+          <span>Drop the CAD frame sequence into<br>
+          <b>assets/seq/frame_0001.jpg</b> … <b>frame_0090.jpg</b><br>
+          and this becomes a scroll-driven exploded view.</span>
+          <span class="loadbar"><i id="loadFill"></i></span>
+        </div>
+
+        <div class="callout left" data-at="0.20" style="top:22%">
+          <b>Eccentric input</b>Drives the disc in orbit, one lobe per revolution
+        </div>
+        <div class="callout right" data-at="0.48" style="top:44%">
+          <b>Cycloidal disc</b>17 lobes against 18 pins — 17:1 in one stage
+        </div>
+        <div class="callout left" data-at="0.74" style="top:70%">
+          <b>Output carrier</b>Rollers pick the orbit off the disc as pure rotation
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ LOG ============ -->
+<section class="page" data-folio="08" data-label="Log">
+  <div class="kicker rv"><b>07</b> Everything else, briefly</div>
+  <h2 class="rv" data-d="1">The log.</h2>
+
+  <div class="log rv" data-d="2">
+    <div class="log-row">
+      <time>2024—</time>
+      <div><strong>Boys &amp; Girls Club of North Alabama</strong>
+      <p>STEM intern and robotics coach. A team of ten students through FIRST LEGO League — research, communication, and the habit of solving something you weren't handed the answer to.</p></div>
+      <span class="tag">Huntsville</span>
+    </div>
+    <div class="log-row">
+      <time>2018</time>
+      <div><strong>University of Alabama at Birmingham</strong>
+      <p>School of Engineering certificate, Automation &amp; Robotics.</p></div>
+      <span class="tag">Birmingham</span>
+    </div>
+    <div class="log-row">
+      <time>—</time>
+      <div><strong>Certifications</strong>
+      <p>Autodesk Certified User — Revit and Inventor. PLTW Computer Science and Engineering Academy. Automation and Robotics. Trojan Safe Computers.</p></div>
+      <span class="tag">Credential</span>
+    </div>
+    <div class="log-row">
+      <time>—</time>
+      <div><strong>Memberships</strong>
+      <p>National Society of Black Engineers. SAE. National Society of Leadership and Success. AAMU Engineering Dean's List, 2023.</p></div>
+      <span class="tag">Affiliation</span>
+    </div>
+    <div class="log-row">
+      <time>—</time>
+      <div><strong>Marching Maroon &amp; White Band</strong>
+      <p>Tuba. Four seasons of showing up at six in the morning for something that isn't graded.</p></div>
+      <span class="tag">Alabama A&amp;M</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FIELD RECORD ============ -->
+<section class="page" data-folio="09" data-label="Field record" style="padding-bottom:0">
+  <div class="kicker rv"><b>08</b> Field record</div>
+  <h2 class="rv" data-d="1">Evidence.</h2>
+
+  <div class="strip" id="strip">
+    <div class="strip-sticky">
+      <div class="strip-track" id="stripTrack">
+
+        <figure class="plate">
+          <span class="missing">assets/gallery/fsae-chassis.jpg</span>
+          <img src="assets/gallery/fsae-chassis.jpg" alt="Formula SAE chassis under construction" onerror="this.style.display='none'">
+        </figure>
+        <figure class="plate">
+          <span class="missing">assets/gallery/harness.jpg</span>
+          <img src="assets/gallery/harness.jpg" alt="Wire harness fabrication" onerror="this.style.display='none'">
+        </figure>
+        <figure class="plate">
+          <span class="missing">assets/gallery/spl.jpg</span>
+          <img src="assets/gallery/spl.jpg" alt="Special Projects Laboratory" onerror="this.style.display='none'">
+        </figure>
+        <figure class="plate">
+          <span class="missing">assets/gallery/manifold.jpg</span>
+          <img src="assets/gallery/manifold.jpg" alt="Intake air manifold" onerror="this.style.display='none'">
+        </figure>
+        <figure class="plate">
+          <span class="missing">assets/gallery/arm.jpg</span>
+          <img src="assets/gallery/arm.jpg" alt="Robotic arm on the bench" onerror="this.style.display='none'">
+        </figure>
+        <figure class="plate">
+          <span class="missing">assets/gallery/print.jpg</span>
+          <img src="assets/gallery/print.jpg" alt="Cycloidal disc, printed" onerror="this.style.display='none'">
+        </figure>
+
+      </div>
+      <span class="strip-hint">Scroll &#8594;</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section class="page contact" data-folio="10" data-label="Contact">
+  <div class="kicker rv"><b>09</b> Contact</div>
+  <h2 class="rv" data-d="1">Let's build<br>something.</h2>
+  <p class="deck rv" data-d="2">Graduating May 2027 and looking for mechanical design, manufacturing, and robotics work. Happy to talk through any of the above in detail.</p>
+
+  <div class="links rv" data-d="3">
+    <a href="mailto:dandrellejohnsonii@gmail.com">Email</a>
+    <a href="https://www.linkedin.com/in/dandrell-johnson-ii" target="_blank" rel="noopener">LinkedIn &#8599;</a>
+    <a href="assets/resume.pdf" download>Download r&eacute;sum&eacute; (PDF)</a>
+  </div>
+
+  <div class="colophon">
+    <span>Dandrell E. Johnson II — B.S.M.E. 2027</span>
+    <span>Set in Anton and IBM Plex</span>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+  'use strict';
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  requestAnimationFrame(function(){ document.body.classList.add('ready'); });
+
+  /* ============================================================
+     SCROLL FRACTION HELPER
+     Everything below is built on this: how far through a tall
+     wrapper are we, expressed 0 to 1.
+     ============================================================ */
+  function progress(el){
+    var r = el.getBoundingClientRect();
+    var span = r.height - window.innerHeight;
+    if(span <= 0) return 0;
+    return Math.min(1, Math.max(0, -r.top / span));
+  }
+
+  /* ============ 1 · REVEALS + PRESS TAGS ============ */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('in'); }
+    });
+  /* threshold = how much of the element must be showing before it starts.
+     rootMargin bottom is POSITIVE here, which starts the reveal slightly
+     BEFORE the element scrolls into view — so with the long stagger above,
+     the cascade is already underway by the time you're looking at it. */
+  }, {threshold:0.04, rootMargin:'0px 0px 6% 0px'});
+  document.querySelectorAll('.rv, a.plate').forEach(function(el){ io.observe(el); });
+
+  /* ============================================================
+     2 · LIVE PHOTOGRAPHS
+     Drift, settle, and warm from drafting blue into full colour
+     as each plate crosses the middle of the screen.
+     ============================================================ */
+  var plates = Array.prototype.slice.call(document.querySelectorAll('.plate'));
+  function paintPlates(){
+    if(reduced) return;
+    var vh = window.innerHeight, mid = vh/2;
+    plates.forEach(function(p){
+      var r = p.getBoundingClientRect();
+      if(r.bottom < -200 || r.top > vh + 200) return;
+      var centre = r.top + r.height/2;
+      var d = (mid - centre) / (vh*0.72);   /* 0 at dead centre */
+      var near = Math.min(1, Math.abs(d));
+      p.style.setProperty('--tint', (near*near).toFixed(3));
+      p.style.setProperty('--pgray', near.toFixed(3));
+      p.style.setProperty('--pscale', (1.055 - 0.045*(1-near)).toFixed(4));
+      p.style.setProperty('--py', (d*26).toFixed(1)+'px');
+    });
+  }
+
+  /* ============================================================
+     3 · EXPLODED VIEW — canvas frame scrubber
+     ============================================================ */
+  var FRAMES = 90, PATH = 'assets/seq/frame_', EXT = '.jpg', PAD = 4;
+  var drawSeq = function(){};
+  (function(){
+    var wrap = document.getElementById('explode');
+    var cv = document.getElementById('seqCanvas');
+    var fb = document.getElementById('stageFallback');
+    var fill = document.getElementById('loadFill');
+    var stage = document.getElementById('stage');
+    var callouts = Array.prototype.slice.call(document.querySelectorAll('.callout'));
+    if(!wrap || !cv) return;
+
+    var ctx = cv.getContext('2d');
+    var imgs = new Array(FRAMES);
+    var loaded = 0, ok = false, current = -1;
+
+    function name(i){ return PATH + String(i+1).padStart(PAD,'0') + EXT; }
+
+    for(var i=0;i<FRAMES;i++){
+      (function(i){
+        var im = new Image();
+        im.onload = function(){
+          imgs[i] = im; loaded++;
+          if(fill) fill.style.width = (loaded/FRAMES*100)+'%';
+          if(!ok){ ok = true; if(fb) fb.style.display='none'; size(); draw(); }
+        };
+        im.onerror = function(){ loaded++; };
+        im.src = name(i);
+      })(i);
+    }
+
+    function firstLoaded(){
+      for(var k=0;k<FRAMES;k++){ if(imgs[k]) return imgs[k]; }
+      return null;
+    }
+
+    function size(){
+      if(!ok) return;
+      var first = firstLoaded();
+      if(!first) return;
+      var box = stage.getBoundingClientRect();
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      var ar = first.naturalWidth / first.naturalHeight;
+      var w = box.width, h = w/ar;
+      if(h > box.height){ h = box.height; w = h*ar; }
+      cv.style.width = w+'px'; cv.style.height = h+'px';
+      cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      current = -1;
+    }
+
+    function nearest(i){
+      if(imgs[i]) return imgs[i];
+      for(var k=1;k<FRAMES;k++){
+        if(imgs[i-k]) return imgs[i-k];
+        if(imgs[i+k]) return imgs[i+k];
+      }
+      return null;
+    }
+
+    function draw(){
+      var p = reduced ? 0.5 : progress(wrap);
+      callouts.forEach(function(c){
+        c.classList.toggle('on', p >= parseFloat(c.dataset.at));
+      });
+      if(!ok) return;
+      var idx = Math.min(FRAMES-1, Math.floor(p*FRAMES));
+      if(idx === current) return;
+      var im = nearest(idx);
+      if(!im) return;
+      ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.drawImage(im,0,0,parseFloat(cv.style.width),parseFloat(cv.style.height));
+      current = idx;
+    }
+
+    window.addEventListener('resize', function(){ size(); draw(); });
+    drawSeq = draw;
+  })();
+
+  /* ============================================================
+     4 · FIELD RECORD — vertical scroll drives horizontal travel
+     ============================================================ */
+  var stripWrap = document.getElementById('strip');
+  var track = document.getElementById('stripTrack');
+  var stripHint = document.querySelector('.strip-hint');
+  var maxX = 0;
+  function measureStrip(){
+    if(!track) return;
+    maxX = Math.max(0, track.scrollWidth - window.innerWidth);
+  }
+  function moveStrip(){
+    if(!stripWrap || !track) return;
+    track.style.transform = 'translate3d(' + (-progress(stripWrap)*maxX) + 'px,0,0)';
+    /* hint stuck check — only show "Scroll ->" while the strip is actually
+       pinned full-screen. Skipping this let it ride up through the ruler
+       during the handoff into the next section. */
+    if(stripHint){
+      var r = stripWrap.getBoundingClientRect();
+      var stuck = r.top <= 0 && r.bottom > window.innerHeight;
+      stripHint.classList.toggle('show', stuck);
+    }
+  }
+
+  /* ============================================================
+     5 · LIVE RULER + FOLIO
+     The lit column is your position in the document.
+     ============================================================ */
+  var ticks = Array.prototype.slice.call(document.querySelectorAll('.ruler i'));
+  var folioL = document.getElementById('folioL');
+  var folioR = document.getElementById('folioR');
+  var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
+
+  function updateRuler(){
+    var doc = document.documentElement;
+    var p = doc.scrollTop / Math.max(1, doc.scrollHeight - window.innerHeight);
+    var visible = ticks.filter(function(t){ return getComputedStyle(t).display !== 'none'; });
+    var idx = Math.min(visible.length-1, Math.floor(p*visible.length));
+    ticks.forEach(function(t){ t.classList.remove('lit'); });
+    if(visible[idx]) visible[idx].classList.add('lit');
+
+    var mid = window.innerHeight*0.4, active = null;
+    pages.forEach(function(s){
+      var r = s.getBoundingClientRect();
+      if(r.top <= mid && r.bottom > mid) active = s;
+    });
+    if(active){
+      if(folioL) folioL.textContent = active.dataset.label || '';
+      if(folioR) folioR.textContent = active.dataset.folio || '';
+    }
+  }
+
+  /* ============ ONE SCROLL LOOP ============ */
+  var ticking = false;
+  function onScroll(){
+    if(ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){
+      paintPlates();
+      drawSeq();
+      moveStrip();
+      updateRuler();
+      ticking = false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+
+  var rz;
+  window.addEventListener('resize', function(){
+    clearTimeout(rz);
+    rz = setTimeout(function(){ measureStrip(); onScroll(); }, 140);
+  });
+  window.addEventListener('load', function(){ measureStrip(); onScroll(); });
+
+  measureStrip();
+  onScroll();
+})();
+</script>
+</body>
+</html>
